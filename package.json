@@ -4,6 +4,10 @@
   "description": "TypeScript Lens implementation with object property proxy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "test/test.sh"
