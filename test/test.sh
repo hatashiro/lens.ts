@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # unit tests
-ts-node test/test.ts
+ts-node test/test.ts || exit 1
 
 # compile failing tests
 for f in $(ls test/failing/*.ts)
