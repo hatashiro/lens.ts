@@ -1,4 +1,4 @@
-# lens.ts [![travis-ci](https://travis-ci.org/noraesae/lens.ts.svg?branch=master)](https://travis-ci.org/noraesae/lens.ts)
+# lens.ts [![travis-ci](https://travis-ci.org/utatti/lens.ts.svg?branch=master)](https://travis-ci.org/utatti/lens.ts)
 
 TypeScript Lens implementation with object property proxy
 
