@@ -57,3 +57,10 @@ const azusa__ = personL.k('name').update(name => {
 })(azusa);
 equal(personL.k('name').get(azusa), 'Nakano Azusa');
 equal(personL.k('name').get(azusa__), 'Azusa Nakano');
+
+const azusa___ = personL.k('accounts').update(xs => xs.concat([{
+  type: 'instagram',
+  handle: 'nakano.azusa',
+}]))(azusa);
+equal(personL.k('accounts').k('length').get(azusa), 2);
+equal(personL.k('accounts').k('length').get(azusa___), 3);
