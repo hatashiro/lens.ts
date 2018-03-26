@@ -80,12 +80,7 @@ You can find similar example code in [test/test.ts](test/test.ts)
 `lens.ts` exports the followings:
 
 ``` typescript
-import {
-  lens,
-  Lens,
-  KeyLens,
-  IndexLens
-} from 'lens.ts';
+import { lens, Lens } from 'lens.ts';
 ```
 
 ### `lens`
@@ -102,6 +97,8 @@ lens<Person>() // :: Lens<Person, Person>
 An instance of `Lens` can be constructed with a getter and setter for a
 source type `T` and a result type `U`.
 
+Usually, you don't need to import `Lens` directly.
+
 ``` typescript
 class Lens<T, U> {
   constructor(
@@ -115,7 +112,7 @@ class Lens<T, U> {
 
 #### `.get(src: T): U`
 
-Retrives an actual value from an actual source.
+Retrive an actual value from an actual source.
 
 ``` typescript
 let x: T;
@@ -153,7 +150,7 @@ lens.get(z) // -> 'hello, world'
 
 #### `.compose(otherLens: Lens<U, V>): Lens<U, V>`
 
-Composes 2 lenses into one.
+Compose 2 lenses into one.
 
 ``` typescript
 let lens1: Lens<T, U>;
@@ -164,7 +161,7 @@ lens1.compose(lens2) // :: Lens<T, V>
 
 #### `.k(key: string)`
 
-A helper method to narrow the lens for a property of `U`.
+Narrow the lens for a property of `U`.
 
 ``` typescript
 type Person = { name: string };
@@ -172,33 +169,17 @@ type Person = { name: string };
 let lens: Lens<Person, Person>;
 
 lens.k('name') // :: Lens<Person, string>
-
-// ↑ is a shortcut for ↓
-lens.compose(new KeyLens<Person, 'name'>('name'))
 ```
 
 #### `.i(index: number)`
 
-A helper method to narrow the lens for an element of an array `U`. A type error
-is thrown if `U` is not an array.
+Narrow the lens for an element of an array `U`. A type error is thrown if `U` is
+not an array.
 
 ``` typescript
 let lens: Lens<T, Array<E>>;
 
 lens.i(10) // :: Lens<T, E>
-
-// ↑ is *roughly* a shortcut for ↓
-lens.compose(new IndexLens<E>(10))
-```
-
-### `KeyLens`, `IndexLens`
-
-They are exported for the references of the `.k()` and `.i()` methods above, but
-it's not recommended using them by themselves. Please use the helper methods.
-
-``` typescript
-lens().k('name') // instead of .compose(new KeyLens('name'))
-lens().i(10) // instead of .compose(new IndexLens(10))
 ```
 
 ## License

@@ -6,7 +6,7 @@ export class Lens<T, U> {
   }
 
   public k<K extends keyof U>(key: K): Lens<T, U[K]> {
-    return this.compose(new KeyLens(key));
+    return this.compose(keyL(key));
   }
 
   // implementation: Lens.prototype.i
@@ -25,25 +25,32 @@ export class Lens<T, U> {
 }
 
 Lens.prototype.i = function(idx) {
-  return this.compose(new IndexLens(idx));
+  // implementation is the same as .k()
+  return this.compose(keyL(idx as any));
 };
 
-export class KeyLens<T, K extends keyof T> extends Lens<T, T[K]> {
-  constructor(key: K) {
-    super(
-      t => t[key],
-      v => t => Object.assign({}, t, { [key]: v })
-    );
+function copy<T>(x: T): T {
+  if (Array.isArray(x)) {
+    return x.map(e => e) as any;
+  } else if (x && typeof x === 'object') {
+    return Object.keys(x).reduce((res, k) => {
+      res[k] = (x as any)[k];
+      return res;
+    }, {} as any);
+  } else {
+    return x;
   }
 }
 
-export class IndexLens<E> extends Lens<Array<E>, E> {
-  constructor(idx: number) {
-    super(
-      t => t[idx],
-      v => t => t.map((_v, _i) => _i === idx ? v : _v)
-    );
-  }
+function keyL<T, K extends keyof T>(prop: K): Lens<T, T[K]> {
+  return new Lens(
+    t => t[prop],
+    v => t => {
+      const copied = copy(t);
+      copied[prop] = v;
+      return copied;
+    }
+  );
 }
 
 export function lens<T>(): Lens<T, T> {
