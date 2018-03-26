@@ -9,9 +9,8 @@ export class Lens<T, U> {
     return this.compose(new KeyLens(key));
   }
 
-  public i(idx: number): Lens<T, U extends Array<infer E> ? E : never> {
-    return this.compose(new IndexLens(idx) as any);
-  }
+  // implementation: Lens.prototype.i
+  public i!: U extends Array<infer E> ? (idx: number) => Lens<T, E> : never;
 
   public compose<V>(other: Lens<U, V>): Lens<T, V> {
     return new Lens(
@@ -24,6 +23,10 @@ export class Lens<T, U> {
     return t => this.set(f(this.get(t)))(t);
   }
 }
+
+Lens.prototype.i = function(idx) {
+  return this.compose(new IndexLens(idx));
+};
 
 export class KeyLens<T, K extends keyof T> extends Lens<T, T[K]> {
   constructor(key: K) {
