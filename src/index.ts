@@ -1,45 +1,48 @@
-export type Lens<T, U> = {
-    readonly [K in keyof U]: Lens<T, U[K]>;
-} & LensInternal<T, U>;
+export class Lens<T, U> {
+  constructor(
+    public get: (target: T) => U,
+    public set: (value: U) => (target: T) => T
+  ) {
+  }
 
-export class LensInternal<T, U> {
-    constructor(
-        public __get: (from: T) => U,
-        public __set: (val: U) => (from: T) => T,
-    ) { }
+  public k<K extends keyof U>(key: K): Lens<T, U[K]> {
+    return this.compose(new KeyLens(key));
+  }
 
-    _<V>(other: Lens<U, V>): Lens<T, V> {
-        return lens(
-            (x: T) => other.__get(this.__get(x)),
-            (x: V) => (o: T) => this.__set(other.__set(x)(this.__get(o)))(o),
-        );
-    }
+  public i(idx: number): Lens<T, U extends Array<infer E> ? E : never> {
+    return this.compose(new IndexLens(idx) as any);
+  }
+
+  public compose<V>(other: Lens<U, V>): Lens<T, V> {
+    return new Lens(
+      t => other.get(this.get(t)),
+      v => t => this.set(other.set(v)(this.get(t)))(t)
+    );
+  }
+
+  public update(f: (u: U) => U): (target: T) => T {
+    return t => this.set(f(this.get(t)))(t);
+  }
 }
 
-export const lens = <T, U>(
-    __get: (from: T) => U,
-    __set: (val: U) => (from: T) => T,
-): Lens<T, U> => new Proxy(new LensInternal(__get, __set), {
-    get(lens: Lens<T, U>, k: keyof U) {
-        return k in lens ? (lens as any)[k] : lens._(key<U>()(k));
-    }
-}) as Lens<T, U>;
+export class KeyLens<T, K extends keyof T> extends Lens<T, T[K]> {
+  constructor(key: K) {
+    super(
+      t => t[key],
+      v => t => Object.assign({}, t, { [key]: v })
+    );
+  }
+}
 
-export const id = <T>(): Lens<T, T> => lens(
-    x => x,
-    x => _ => x,
-);
+export class IndexLens<E> extends Lens<Array<E>, E> {
+  constructor(idx: number) {
+    super(
+      t => t[idx],
+      v => t => t.map((_v, _i) => _i === idx ? v : _v)
+    );
+  }
+}
 
-export const key = <T>() => <K extends keyof T>(k: K): Lens<T, T[K]> => lens(
-    o => o[k],
-    x => o => Object.assign(o, { [k as any]: x }),
-);
-
-export const getl = <T, U>(lens: Lens<T, U>) =>
-    (target: T): U => lens.__get(target);
-
-export const setl = <T, U>(lens: Lens<T, U>, val: U) =>
-    (target: T): T => lens.__set(val)(target);
-
-export const updatel = <T, U>(lens: Lens<T, U>, f: (u: U) => U) =>
-    (target: T): T => lens.__set(f(lens.__get(target)))(target);
+export function lens<T>(): Lens<T, T> {
+  return new Lens(t => t, v => t => v);
+}

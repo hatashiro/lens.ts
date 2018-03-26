@@ -1,62 +1,59 @@
 import { equal, deepEqual } from 'assert';
-import {
-    id,
-    key,
-    getl,
-    setl,
-    updatel,
-} from '../src/';
+import { lens } from '../src/';
 
 type Person = {
-    name: string,
-    age: number,
-    accounts: Accounts,
+  name: string,
+  age: number,
+  accounts: Array<Account>
 };
 
-type Accounts = {
-    twitter?: string,
-    facebook?: string,
+type Account = {
+  type: string;
+  handle: string;
 };
 
 const azusa: Person = {
-    name: 'Nakano Azusa',
-    age: 15,
-    accounts: {
-        twitter: '@azusa',
+  name: 'Nakano Azusa',
+  age: 15,
+  accounts: [
+    {
+      type: 'twitter',
+      handle: '@azusa'
     },
+    {
+      type: 'facebook',
+      handle: 'nakano.azusa'
+    }
+  ]
 };
 
-// id lens test
-const personL = id<Person>();
-deepEqual(getl(personL)(azusa), azusa);
+const personL = lens<Person>();
+deepEqual(personL.get(azusa), azusa);
 
-// key lens test with composition
 equal(
-    getl(
-        personL._(key<Person>()('name'))
-    )(azusa),
-    'Nakano Azusa',
+  personL.compose(lens<Person>().k('name')).get(azusa),
+  'Nakano Azusa'
 );
 
-// property lens test
-const twitterL = personL.accounts.twitter;
-equal(getl(twitterL)(azusa), '@azusa');
+const twitterL = personL.k('accounts').i(0).k('handle');
+equal(twitterL.get(azusa), '@azusa');
 
 // property lens test with composition
 equal(
-    getl(
-        personL.accounts._(key<Accounts>()('twitter'))
-    )(azusa),
-    '@azusa',
+  personL.k('accounts').compose(lens<Account[]>().i(1)).k('handle').get(azusa),
+  'nakano.azusa'
 );
 
-// setl test
-setl(personL.accounts.facebook, '中野梓')(azusa);
-equal(getl(personL.accounts.facebook)(azusa), '中野梓');
+// set test
+const nthHandle = (n: number) => personL.k('accounts').i(n).k('handle');
+const azusa_ = nthHandle(1).set('中野梓')(azusa);
+equal(nthHandle(1).get(azusa), 'nakano.azusa');
+equal(nthHandle(1).get(azusa_), '中野梓');
 
-// updatel test
-updatel(personL.name, name => {
-    const [sur, given] = name.split(' ');
-    return `${given} ${sur}`;
+// update test
+const azusa__ = personL.k('name').update(name => {
+  const [sur, given] = name.split(' ');
+  return `${given} ${sur}`;
 })(azusa);
-equal(getl(personL.name)(azusa), 'Azusa Nakano');
+equal(personL.k('name').get(azusa), 'Nakano Azusa');
+equal(personL.k('name').get(azusa__), 'Azusa Nakano');

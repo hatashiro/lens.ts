@@ -1,17 +1,14 @@
-import {
-    id,
-    key,
-} from '../../src/';
+import { lens } from '../../src/';
 
 type Person = {
-    name: string,
-    age: number,
-    accounts: Accounts,
+  name: string,
+  age: number,
+  accounts: Array<Account>
 };
 
-type Accounts = {
-    twitter?: string,
-    facebook?: string,
+type Account = {
+  type: string;
+  handle: string;
 };
 
-id<Person>()._(key<Person>()('foo'));
+lens<Person>().compose(lens<Person>().k('foo'));
