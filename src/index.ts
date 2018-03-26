@@ -22,6 +22,10 @@ export class Lens<T, U> {
   public update(f: (u: U) => U): (target: T) => T {
     return t => this.set(f(this.get(t)))(t);
   }
+
+  public view<V>(f: (u: U) => V): (target: T) => V {
+    return t => f(this.get(t));
+  }
 }
 
 Lens.prototype.i = function(idx) {
