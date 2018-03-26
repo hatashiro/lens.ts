@@ -1,6 +1,6 @@
 # lens.ts [![travis-ci](https://travis-ci.org/utatti/lens.ts.svg?branch=master)](https://travis-ci.org/utatti/lens.ts)
 
-TypeScript Lens implementation with object property proxy
+TypeScript Lens implementation
 
 ## Lens?
 
@@ -14,61 +14,66 @@ recommend reading the following documents.
 
 Via [npm](https://www.npmjs.com/package/lens.ts):
 
-``` bash
-$ npm i lens.ts
+``` shell
+npm i lens.ts
 ```
 
 ## Usage
 
 ``` typescript
+// import a factory function for lens
+import { lens } from 'lens.ts';
+
 type Person = {
-    name: string,
-    age: number,
-    accounts: Accounts,
+  name: string;
+  age: number;
+  accounts: Array<Account>;
 };
 
-type Accounts = {
-    twitter?: string,
-    facebook?: string,
+type Account = {
+  type: string;
+  handle: string;
 };
 
 const azusa: Person = {
-    name: 'Nakano Azusa',
-    age: 15,
-    accounts: {
-        twitter: '@azusa',
+  name: 'Nakano Azusa',
+  age: 15,
+  accounts: [
+    {
+      type: 'twitter',
+      handle: '@azusa'
     },
+    {
+      type: 'facebook',
+      handle: 'nakano.azusa'
+    }
+  ]
 };
 
-// create a identity lens for Person
-const personL = id<Person>();
+// create an identity lens for Person
+const personL = lens<Person>();
 
-// it automatically generates property lenses via Proxy
-personL.name; // :: Lens<Person, string>
-personL.accounts; // :: Lens<Person, Accounts>
-personL.accounts.twitter; // :: Lens<Person, string>
+// type-safe key lens with k()
+personL.k('name') // :: Lens<Person, string>
+personL.k('accounts') // :: Lens<Person, Array<Account>>
+personL.k('hoge') // type error, 'hoge' is not a key of Person
 
-// a key lens can be created manually
-key<Person>()('name'); // the same as personL.name
+// type-safe index lens with i()
+personL.k('accounts').i(1) // :: Lens<Person, Account>
+personL.i(1) // type error, 'i' cannot be used for non-array type
 
-// lenses can be composed via `._()`
-key<Person>()('accounts')._(key<Accounts>()('twitter'));
+// type-safe lens composition
+lens<Person>().k('accounts').i(1).compose(
+  lens<Account>().k('handle')
+);
 
 // get, set and update with lens
-getl(personL.accounts.twitter)(azusa); // -> '@azusa'
-
-setl(
-    personL.name,
-    '中野梓',
-)(azusa); // -> { name: '中野梓', ... }
-
-updatel(
-    personL.age,
-    x => x + 1,
-)(azusa); // -> { age: 16, ... }
+personL.k('accounts').i(0).k('handle').get(azusa) // -> '@azusa'
+personL.k('name').set('中野梓')(azusa) // -> { name: '中野梓', ... }
+personL.k('age').update(x => x + 1)(azusa) // -> { age: 16, ... }
 ```
 
-You can find the same code in [test/test.ts](test/test.ts)
+You can find similar example code in [test/test.ts](test/test.ts)
 
 ## API
 
@@ -76,133 +81,124 @@ You can find the same code in [test/test.ts](test/test.ts)
 
 ``` typescript
 import {
-    Lens,
-    LensInternal,
-    lens,
-    id,
-    key,
-    getl,
-    setl,
-    updatel,
+  lens,
+  Lens,
+  KeyLens,
+  IndexLens
 } from 'lens.ts';
 ```
 
-### `Lens`
+### `lens`
 
-The type `Lens` is just `LensInternal` + property proxy.
+A function `lens` is a factory function for an identity lens for a type. It
+returns a `Lens` instance.
 
 ``` typescript
-type Lens<T, U> = {
-    readonly [K in keyof U]: Lens<T, U[K]>;
-} & LensInternal<T, U>;
+lens<Person>() // :: Lens<Person, Person>
 ```
 
-Example:
+### `Lens<T, U>`
+
+An instance of `Lens` can be constructed with a getter and setter for a
+source type `T` and a result type `U`.
 
 ``` typescript
-let lens1: Lens<T, U>;
-lens.prop1; // .prop1 is also a lens from T to prop1 of U
-```
-
-### `LensInternal`
-
-`LensInternal` provides the compose function `_()` for two lenses.
-
-``` typescript
-class LensInternal<T, U> {
-    _<V>(other: Lens<U, V>): Lens<T, V>;
+class Lens<T, U> {
+  constructor(
+    public get: (target: T) => U,
+    public set: (value: U) => (target: T) => T
+  ) { ... }
 }
 ```
 
-Example:
+`Lens` provides the following methods.
+
+#### `.get(src: T): U`
+
+Retrives an actual value from an actual source.
+
+``` typescript
+let x: T;
+let lens: Lens<T, U>;
+
+lens.get(x) // :: U
+```
+
+#### `.set(val: U): (src: T) => T`
+
+Returns a setter function returning a new object with the provided value already
+set. This function is immutable.
+
+``` typescript
+let x: T;
+let lens: Lens<T, string>;
+
+let y: T = lens.set('hello')(x);
+
+lens.get(y) // -> 'hello'
+```
+
+#### `.update(f: (val: U) => U): (src: T) => T`
+
+Same as `.set()`, but with a modifier instead of a value.
+
+``` typescript
+let y: T;
+let lens: Lens<T, string>;
+
+let z: T = lens.update(str => str + ', world')(y);
+
+lens.get(z) // -> 'hello, world'
+```
+
+#### `.compose(otherLens: Lens<U, V>): Lens<U, V>`
+
+Composes 2 lenses into one.
 
 ``` typescript
 let lens1: Lens<T, U>;
 let lens2: Lens<U, V>;
 
-lens1._(lens2); // :: Lens<T, V>
+lens1.compose(lens2) // :: Lens<T, V>
 ```
 
-### `lens`
+#### `.k(key: string)`
 
-Create a lens with a getter and a setter.
+A helper method to narrow the lens for a property of `U`.
 
 ``` typescript
-function lens<T, U>(
-    get: (from: T) => U,
-    set: (val: U) => (from: T) => T,
-): Lens<T, U>;
+type Person = { name: string };
+
+let lens: Lens<Person, Person>;
+
+lens.k('name') // :: Lens<Person, string>
+
+// ↑ is a shortcut for ↓
+lens.compose(new KeyLens<Person, 'name'>('name'))
 ```
 
-### `id`
+#### `.i(index: number)`
 
-Create an identity lens with an object type.
+A helper method to narrow the lens for an element of an array `U`. A type error
+is thrown if `U` is not an array.
 
 ``` typescript
-function id<T>(): Lens<T, T>;
+let lens: Lens<T, Array<E>>;
+
+lens.i(10) // :: Lens<T, E>
+
+// ↑ is *roughly* a shortcut for ↓
+lens.compose(new IndexLens<E>(10))
 ```
 
-Example:
+### `KeyLens`, `IndexLens`
+
+They are exported for the references of the `.k()` and `.i()` methods above, but
+it's not recommended using them by themselves. Please use the helper methods.
 
 ``` typescript
-let personL = id<Person>();
-```
-
-### `key`
-
-Create a key lens for an object.
-
-``` typescript
-function key<T>(): <K extends keyof T>(k: K): Lens<T, T[K]>;
-```
-
-Example:
-
-``` typescript
-let personNameL = key<Person>()('name');
-```
-
-### `getl`
-
-`getl` is for *get lens*. It retrives a value from a lens with a target object.
-
-``` typescript
-function getl<T, U>(lens: Lens<T, U>): (target: T) => U;
-```
-
-Example:
-
-``` typescript
-let p: Person = { name: 'Azusa' };
-getl(personNameL)(p); // -> 'Azusa'
-```
-
-### `setl`
-
-`setl` is for *set lens*. It sets a value of a lens with a target object.
-
-``` typescript
-function setl<T, U>(lens: Lens<T, U>, val: U): (target: T) => T
-```
-
-Example:
-
-``` typescript
-setl(personNameL, 'Yui')(p); // -> { name: 'Yui' }
-```
-
-### `updatel`
-
-`updatel` is for *update lens*. It updates a value of a lens by a function, with a target object.
-
-``` typescript
-function updatel<T, U>(lens: Lens<T, U>, f: (val: U) => U): (target: T) => T
-```
-
-Example:
-
-``` typescript
-updatel(personNameL, name => 'Hirasawa ' + name)(p); // -> { name: Hirasawa Yui }
+lens().k('name') // instead of .compose(new KeyLens('name'))
+lens().i(10) // instead of .compose(new IndexLens(10))
 ```
 
 ## License
