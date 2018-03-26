@@ -123,7 +123,7 @@ lens.get(x) // :: U
 
 #### `.set(val: U): (src: T) => T`
 
-Returns a setter function returning a new object with the provided value already
+Return a setter function returning a new object with the provided value already
 set. This function is immutable.
 
 ``` typescript
@@ -146,6 +146,16 @@ let lens: Lens<T, string>;
 let z: T = lens.update(str => str + ', world')(y);
 
 lens.get(z) // -> 'hello, world'
+```
+
+#### `.view(f: (val: U) => V): (src: T) => V`
+
+Map a function to a lens'ed value without composing another lens.
+
+``` typescript
+let lens: Lens<T, string>;
+
+lens.view(str => str.length)(z); // -> 12
 ```
 
 #### `.compose(otherLens: Lens<U, V>): Lens<U, V>`

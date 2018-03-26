@@ -64,3 +64,7 @@ const azusa___ = personL.k('accounts').update(xs => xs.concat([{
 }]))(azusa);
 equal(personL.k('accounts').k('length').get(azusa), 2);
 equal(personL.k('accounts').k('length').get(azusa___), 3);
+
+// view test
+const accountTypes = personL.k('accounts').view(xs => xs.map(x => x.type));
+deepEqual(accountTypes(azusa___), ['twitter', 'facebook', 'instagram']);
