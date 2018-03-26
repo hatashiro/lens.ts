@@ -27,10 +27,8 @@
     "url": "https://github.com/utatti/lens.ts/issues"
   },
   "homepage": "https://github.com/utatti/lens.ts",
-  "dependencies": {
-    "@types/node": "^9.6.0"
-  },
   "devDependencies": {
+    "@types/node": "^9.6.0",
     "ts-node": "^5.0.1",
     "typescript": "^2.8.0-rc"
   }
