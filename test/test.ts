@@ -28,43 +28,46 @@ const azusa: Person = {
 };
 
 const personL = lens<Person>();
-deepEqual(personL.get(azusa), azusa);
+const getPerson = personL.get();
+deepEqual(getPerson(azusa), azusa);
 
 equal(
-  personL.compose(lens<Person>().k('name')).get(azusa),
+  personL.compose(lens<Person>().k('name')).get()(azusa),
   'Nakano Azusa'
 );
 
 const twitterL = personL.k('accounts').i(0).k('handle');
-equal(twitterL.get(azusa), '@azusa');
+const getTwitterHandle = twitterL.get();
+equal(getTwitterHandle(azusa), '@azusa');
 
 // property lens test with composition
 equal(
-  personL.k('accounts').compose(lens<Account[]>().i(1)).k('handle').get(azusa),
+  personL.k('accounts').compose(lens<Account[]>().i(1)).k('handle').get()(azusa),
   'nakano.azusa'
 );
 
-// set test
+// set with value
 const nthHandle = (n: number) => personL.k('accounts').i(n).k('handle');
-const azusa_ = nthHandle(1).set('中野梓')(azusa);
-equal(nthHandle(1).get(azusa), 'nakano.azusa');
-equal(nthHandle(1).get(azusa_), '中野梓');
+const get1stHandle = nthHandle(1).get();
+const set1stHandle = nthHandle(1).set('中野梓');
+equal(get1stHandle(set1stHandle(azusa)), '中野梓');
+equal(get1stHandle(azusa), 'nakano.azusa'); // immutablility test
 
-// update test
-const azusa__ = personL.k('name').update(name => {
+// set with modify function
+const reverseName = personL.k('name').set(name => {
   const [sur, given] = name.split(' ');
   return `${given} ${sur}`;
-})(azusa);
-equal(personL.k('name').get(azusa), 'Nakano Azusa');
-equal(personL.k('name').get(azusa__), 'Azusa Nakano');
+});
+equal(reverseName(azusa).name, 'Azusa Nakano');
+equal(azusa.name, 'Nakano Azusa'); // immutablility test
 
-const azusa___ = personL.k('accounts').update(xs => xs.concat([{
+const azusa___ = personL.k('accounts').set(xs => xs.concat([{
   type: 'instagram',
   handle: 'nakano.azusa',
 }]))(azusa);
-equal(personL.k('accounts').k('length').get(azusa), 2);
-equal(personL.k('accounts').k('length').get(azusa___), 3);
+equal(personL.k('accounts').k('length').get()(azusa), 2);
+equal(personL.k('accounts').k('length').get()(azusa___), 3);
 
-// view test
-const accountTypes = personL.k('accounts').view(xs => xs.map(x => x.type));
+// get with map function
+const accountTypes = personL.k('accounts').get(xs => xs.map(x => x.type));
 deepEqual(accountTypes(azusa___), ['twitter', 'facebook', 'instagram']);

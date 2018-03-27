@@ -1,7 +1,7 @@
 export class Lens<T, U> {
   constructor(
-    public get: (target: T) => U,
-    public set: (value: U) => (target: T) => T
+    private _get: Getter<T, U>,
+    private _set: (value: U) => Setter<T>
   ) {
   }
 
@@ -14,19 +14,35 @@ export class Lens<T, U> {
 
   public compose<V>(other: Lens<U, V>): Lens<T, V> {
     return new Lens(
-      t => other.get(this.get(t)),
-      v => t => this.set(other.set(v)(this.get(t)))(t)
+      t => other._get(this._get(t)),
+      v => t => this._set(other._set(v)(this._get(t)))(t)
     );
   }
 
-  public update(f: (u: U) => U): (target: T) => T {
-    return t => this.set(f(this.get(t)))(t);
+  public get(): Getter<T, U>;
+  public get<V>(f: Getter<U, V>): Getter<T, V>;
+  public get() {
+    if (arguments.length) {
+      const f = arguments[0];
+      return (t: T) => f(this._get(t));
+    } else {
+      return this._get;
+    }
   }
 
-  public view<V>(f: (u: U) => V): (target: T) => V {
-    return t => f(this.get(t));
+  public set(value: U): Setter<T>;
+  public set(f: Setter<U>): Setter<T>;
+  public set(modifier: U | Setter<U>) {
+    if (typeof modifier === 'function') {
+      return (t: T) => this._set(modifier(this._get(t)))(t);
+    } else {
+      return this._set(modifier);
+    }
   }
 }
+
+export type Getter<T, V> = (target: T) => V;
+export type Setter<T>    = (target: T) => T;
 
 Lens.prototype.i = function(idx) {
   // implementation is the same as .k()
