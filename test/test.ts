@@ -71,3 +71,10 @@ equal(personL.k('accounts').k('length').get()(azusa___), 3);
 // get with map function
 const accountTypes = personL.k('accounts').get(xs => xs.map(x => x.type));
 deepEqual(accountTypes(azusa___), ['twitter', 'facebook', 'instagram']);
+
+// getter/setter composition
+const firstAccountL = lens<Person>().k('accounts').i(0);
+const accountHandleL = lens<Account>().k('handle');
+const setter = firstAccountL.set(accountHandleL.set('yui'));
+const getter = firstAccountL.get(accountHandleL.get());
+equal(getter(setter(azusa)), 'yui');
