@@ -1,7 +1,7 @@
 {
   "name": "lens.ts",
   "version": "0.3.0",
-  "description": "TypeScript Lens implementation",
+  "description": "TypeScript Lens implementation with property proxy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

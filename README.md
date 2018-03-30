@@ -1,6 +1,6 @@
 # lens.ts [![travis-ci](https://travis-ci.org/utatti/lens.ts.svg?branch=master)](https://travis-ci.org/utatti/lens.ts)
 
-TypeScript Lens implementation
+TypeScript Lens implementation with property proxy
 
 ## Lens?
 
@@ -53,27 +53,37 @@ const azusa: Person = {
 // create an identity lens for Person
 const personL = lens<Person>();
 
-// type-safe key lens with k()
+// key lens with k()
 personL.k('name') // :: Lens<Person, string>
 personL.k('accounts') // :: Lens<Person, Array<Account>>
 personL.k('hoge') // type error, 'hoge' is not a key of Person
 
-// type-safe index lens with i()
+// index lens with i()
 personL.k('accounts').i(1) // :: Lens<Person, Account>
 personL.i(1) // type error, 'i' cannot be used for non-array type
 
-// type-safe lens composition
-lens<Person>().k('accounts').i(1).compose(
-  lens<Account>().k('handle')
-);
+// You can use property proxy to narrow lenses
+personL.name // :: Lens<Person, string>
+personL.accounts // :: Lens<Person, Array<Account>>
+personL.accounts[1] // :: Lens<Person, Account>
+personL.hoge // type error
 
-// get and set with lens
-personL.k('accounts').i(0).k('handle').get()(azusa) // -> '@azusa'
-personL.k('name').set('中野梓')(azusa) // -> { name: '中野梓', ... }
-personL.k('age').set(x => x + 1)(azusa) // -> { age: 16, ... }
+// get and set with Lens
+personL.accounts[0].handle.get()(azusa) // -> '@azusa'
+personL.accounts[0].handle.set('@nakano')(azusa) // -> { ... { handle: '@nakano' } ... }
+personL.age.set(x => x + 1)(azusa) // -> { age: 16, ... }
+
+// Lens composition
+const fstAccountL = lens<Person>().accounts[0] // :: Lens<Person, Account>
+const handleL = lens<Account>().handle // :: Lens<Account, string>
+fstAccountL.compose(handleL) // :: Lens<Person, string>
+
+// Getter/Setter composition
+fstAccountL.get(handleL.get())(azusa) // -> '@azusa'
+fstAccountL.set(handleL.set('@nakano'))(azusa) // -> { ... { handle: '@nakano' } ... }
 ```
 
-You can find similar example code in [test/test.ts](test/test.ts)
+You can find similar example code in [/test](test).
 
 ## API
 
@@ -84,7 +94,8 @@ import {
   lens,
   Getter,
   Setter,
-  Lens
+  Lens,
+  createLens
 } from 'lens.ts';
 ```
 
@@ -118,14 +129,17 @@ modify the target object.
 An instance of `Lens` can be constructed with a getter and setter for a
 source type `T` and a result type `U`.
 
-Usually, you don't need to import `Lens` directly.
+`Lens` is not just a class, but it's internally a product type of `LensImpl` and
+Proxy types, so you cannot just create one with `new Lens()`. A recommended way
+to create an instance is `lens<X>()`, but you can also manually provide a getter
+and a setter with `createLens()`.
 
 ``` typescript
-class Lens<T, U> {
-  constructor(
-    private _get: (target: T) => U,
-    private _set: (value: U) => (target: T) => T
-  ) { ... }
+function createLens<T, U>(
+  _get: Getter<T, U>,
+  _set: (value: U) => Setter<T>
+): Lens<T, U> {
+  return proxify(new LensImpl(_get, _set));
 }
 ```
 
@@ -213,6 +227,23 @@ let firstAccountL =
 
 *FYI: The reason `firstL` becomes a function with `<T>` is to make it
 polymorphic.*
+
+#### Proxied properties
+
+`Lens<T, U>` also provides proxied properties for the type `U`. It's simpler
+alternative for `.k()` or `.i()`.
+
+``` typescript
+objL.name // same as objL.k('name')
+arrL[0] // same as arrL.i(0)
+```
+
+## Credits
+
+Property proxy couldn't have been implemented without
+[@ktsn](https://github.com/ktsn)'s help.
+
+- https://github.com/ktsn/lens-proxy
 
 ## License
 
