@@ -2,6 +2,7 @@
 
 # unit tests
 ts-node --no-cache --type-check test/test.ts || exit 1
+ts-node --no-cache --type-check test/test_proxy.ts || exit 1
 
 # compile failing tests
 for f in $(ls test/failing/*.ts)
