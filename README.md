@@ -154,9 +154,9 @@ type Person = {
   accounts: Account[];
 };
 
-lens<Person>.k('name') // :: Lens<Person, string>
-lens<Person>.k('accounts') // :: Lens<Person, Account[]>
-lens<Person>.k('accounts').k(0) // :: Lens<Person, Account>
+lens<Person>().k('name') // :: Lens<Person, string>
+lens<Person>().k('accounts') // :: Lens<Person, Account[]>
+lens<Person>().k('accounts').k(0) // :: Lens<Person, Account>
 ```
 
 #### `.get()`
