@@ -14,13 +14,13 @@ recommend reading the following documents.
 
 Via [npm](https://www.npmjs.com/package/lens.ts):
 
-``` shell
+```shell
 npm i lens.ts
 ```
 
 ## Usage
 
-``` typescript
+```typescript
 // import a factory function for lens
 import { lens } from 'lens.ts';
 
@@ -35,7 +35,7 @@ type Account = {
   handle: string;
 };
 
-const azusa: Person = {
+let azusa: Person = {
   name: 'Nakano Azusa',
   age: 15,
   accounts: [
@@ -51,7 +51,7 @@ const azusa: Person = {
 };
 
 // create an identity lens for Person
-const personL = lens<Person>();
+let personL = lens<Person>();
 
 // key lens with k()
 personL.k('name') // :: Lens<Person, string>
@@ -72,8 +72,8 @@ personL.accounts[0].handle.set('@nakano')(azusa) // -> { ... { handle: '@nakano'
 personL.age.set(x => x + 1)(azusa) // -> { age: 16, ... }
 
 // Lens composition
-const fstAccountL = lens<Person>().accounts[0] // :: Lens<Person, Account>
-const handleL = lens<Account>().handle // :: Lens<Account, string>
+let fstAccountL = lens<Person>().accounts[0] // :: Lens<Person, Account>
+let handleL = lens<Account>().handle // :: Lens<Account, string>
 fstAccountL.compose(handleL) // :: Lens<Person, string>
 
 // Getter/Setter composition
@@ -87,30 +87,39 @@ You can find similar example code in [/test](test).
 
 `lens.ts` exports the followings:
 
-``` typescript
+```typescript
 import {
   lens,
   Getter,
   Setter,
-  Lens,
-  createLens
+  Lens
 } from 'lens.ts';
 ```
 
 ### `lens`
 
-A function `lens` is a factory function for an identity lens for a type. It
-returns a `Lens` instance.
+A function `lens` is a factory function for a lens. Without any arguments
+except for a type parameter, it returns an identity lens for the provided
+type.
 
-``` typescript
+```typescript
 lens<Person>() // :: Lens<Person, Person>
+```
+
+You can provide a getter and a setter to create a lens manually. They should
+have proper `Getter` and `Setter` types.
+
+```typescript
+let getter // :: Getter<X, Y>
+let setter // :: (val: Y) => Setter<X>
+lens(getter, setter) // :: Lens<X, Y>
 ```
 
 ### `Getter`, `Setter`
 
 They are just a type alias for the following function types.
 
-``` typescript
+```typescript
 export type Getter<T, V> = (target: T) => V;
 export type Setter<T>    = (target: T) => T;
 ```
@@ -124,30 +133,20 @@ modify the target object.
 
 ### `Lens<T, U>`
 
-An instance of `Lens` can be constructed with a getter and setter for a
-source type `T` and a result type `U`.
+A lens is consisted of a getter and a setter for a source type `T` and a
+result type `U`.
 
-`Lens` is not just a class, but it's internally a product type of `LensImpl` and
-Proxy types, so you cannot just create one with `new Lens()`. A recommended way
-to create an instance is `lens<X>()`, but you can also manually provide a getter
-and a setter with `createLens()`.
-
-``` typescript
-function createLens<T, U>(
-  _get: Getter<T, U>,
-  _set: (value: U) => Setter<T>
-): Lens<T, U> {
-  return proxify(new LensImpl(_get, _set));
-}
-```
+`Lens` is not a class, so it can't be created with `new Lens()`. It's
+internally a product type of `LensImpl` and `LensProxy`. Please use `lens()`
+to create a lens.
 
 `Lens` provides the following methods.
 
 #### `.k<K extends keyof U>(key: K)`
 
-Narrow the lens for a property of `U`.
+Narrow the lens for a property or an index of `U`.
 
-``` typescript
+```typescript
 // we will use these types for the following examples
 type Person = {
   name: string;
@@ -171,10 +170,10 @@ It is polymorphic.
 retrive an actual value. You can optionally provide another getter (or mapping
 function) to retrieve a mapped value.
 
-``` typescript
-const target = { age: 15, ... };
+```typescript
+let target = { age: 15, ... };
 
-const ageL = lens<Person>().k('age');
+let ageL = lens<Person>().k('age');
 
 ageL.get()(target) // -> 15
 ageL.get(age => age + 10)(target) // -> 25
@@ -191,10 +190,10 @@ It is polymorphic.
 an updated (and new) object. `Setter`s here should be all immutable. You can
 provide a value to set, or optionally a setter for value.
 
-``` typescript
-const target = { age: 15, ... };
+```typescript
+let target = { age: 15, ... };
 
-const ageL = lens<Person>().k('age');
+let ageL = lens<Person>().k('age');
 
 ageL.set(20)(target) // -> { age: 20, ... }
 ageL.set(age => age + 1)(target) // -> { age: 16, ... }
@@ -204,7 +203,7 @@ ageL.set(age => age + 1)(target) // -> { age: 16, ... }
 
 Compose 2 lenses into one.
 
-``` typescript
+```typescript
 let lens1: Lens<T, U>;
 let lens2: Lens<U, V>;
 
@@ -222,7 +221,7 @@ polymorphic.*
 
 `Lens<T, U>` also provides proxied properties for the type `U`.
 
-``` typescript
+```typescript
 objL.name // same as objL.k('name')
 arrL[0] // same as arrL.k(0)
 ```
