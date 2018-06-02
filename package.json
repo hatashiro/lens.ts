@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "test": "test/test.sh",
-    "release": "npm run build && npm publish"
+    "release": "yarn build && yarn publish"
   },
   "repository": {
     "type": "git",
