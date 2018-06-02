@@ -57,10 +57,8 @@ const personL = lens<Person>();
 personL.k('name') // :: Lens<Person, string>
 personL.k('accounts') // :: Lens<Person, Array<Account>>
 personL.k('hoge') // type error, 'hoge' is not a key of Person
-
-// index lens with i()
-personL.k('accounts').i(1) // :: Lens<Person, Account>
-personL.i(1) // type error, 'i' cannot be used for non-array type
+personL.k('accounts').k(1) // :: Lens<Person, Account>
+personL.k(1) // type error, 'i' cannot be used for non-array type
 
 // You can use property proxy to narrow lenses
 personL.name // :: Lens<Person, string>
@@ -145,7 +143,7 @@ function createLens<T, U>(
 
 `Lens` provides the following methods.
 
-#### `.k(key: string)`
+#### `.k<K extends keyof U>(key: K)`
 
 Narrow the lens for a property of `U`.
 
@@ -158,17 +156,9 @@ type Person = {
 };
 
 lens<Person>.k('name') // :: Lens<Person, string>
+lens<Person>.k('accounts') // :: Lens<Person, Account[]>
+lens<Person>.k('accounts').k(0) // :: Lens<Person, Account>
 ```
-
-#### `.i(index: number)`
-
-Narrow the lens for an element of an array `U`. A type error is thrown if `U` is
-not an array.
-
-``` typescript
-lens<Person>.k(accounts).i(1) // :: Lens<Person, Account>
-```
-
 
 #### `.get()`
 
@@ -219,7 +209,7 @@ let lens1: Lens<T, U>;
 let lens2: Lens<U, V>;
 
 let accountsL = lens<Person>().k('accounts');
-let firstL = <T>() => lens<T[]>().i(0);
+let firstL = <T>() => lens<T[]>().k(0);
 
 let firstAccountL =
   accountsL.compose(firstL()); // :: Lens<Person, Account>
@@ -230,12 +220,11 @@ polymorphic.*
 
 #### Proxied properties
 
-`Lens<T, U>` also provides proxied properties for the type `U`. It's simpler
-alternative for `.k()` or `.i()`.
+`Lens<T, U>` also provides proxied properties for the type `U`.
 
 ``` typescript
 objL.name // same as objL.k('name')
-arrL[0] // same as arrL.i(0)
+arrL[0] // same as arrL.k(0)
 ```
 
 ## Credits
