@@ -36,18 +36,18 @@ equal(
   'Nakano Azusa'
 );
 
-const twitterL = personL.k('accounts').i(0).k('handle');
+const twitterL = personL.k('accounts').k(0).k('handle');
 const getTwitterHandle = twitterL.get();
 equal(getTwitterHandle(azusa), '@azusa');
 
 // property lens test with composition
 equal(
-  personL.k('accounts').compose(lens<Account[]>().i(1)).k('handle').get()(azusa),
+  personL.k('accounts').compose(lens<Account[]>().k(1)).k('handle').get()(azusa),
   'nakano.azusa'
 );
 
 // set with value
-const nthHandle = (n: number) => personL.k('accounts').i(n).k('handle');
+const nthHandle = (n: number) => personL.k('accounts').k(n).k('handle');
 const get1stHandle = nthHandle(1).get();
 const set1stHandle = nthHandle(1).set('中野梓');
 equal(get1stHandle(set1stHandle(azusa)), '中野梓');
@@ -73,7 +73,7 @@ const accountTypes = personL.k('accounts').get(xs => xs.map(x => x.type));
 deepEqual(accountTypes(azusa___), ['twitter', 'facebook', 'instagram']);
 
 // getter/setter composition
-const firstAccountL = lens<Person>().k('accounts').i(0);
+const firstAccountL = lens<Person>().k('accounts').k(0);
 const accountHandleL = lens<Account>().k('handle');
 const setter = firstAccountL.set(accountHandleL.set('yui'));
 const getter = firstAccountL.get(accountHandleL.get());
