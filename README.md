@@ -226,6 +226,8 @@ objL.name // same as objL.k('name')
 arrL[0] // same as arrL.k(0)
 ```
 
+Note that proxy objects are not available in Internet Explorer as [caniuse describes](https://caniuse.com/#feat=proxy).
+
 ## Credits
 
 Property proxy couldn't have been implemented without
