@@ -1,5 +1,5 @@
-type Lens<T, U> = LensImpl<T, U> & LensProxy<T, U>;
-type LensProxy<T, U> = { readonly [K in keyof U]: Lens<T, U[K]> };
+export type Lens<T, U> = LensImpl<T, U> & LensProxy<T, U>;
+export type LensProxy<T, U> = { readonly [K in keyof U]: Lens<T, U[K]> };
 
 export class LensImpl<T, U> {
   constructor(
