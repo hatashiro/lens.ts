@@ -1,5 +1,5 @@
 import { equal, deepEqual } from 'assert';
-import { lens } from '../src/';
+import { lens, prism } from '../src/';
 
 type Person = {
   name: string,
@@ -78,3 +78,35 @@ const accountHandleL = lens<Account>().handle;
 const setter = firstAccountL.set(accountHandleL.set('yui'));
 const getter = firstAccountL.get(accountHandleL.get());
 equal(getter(setter(azusa)), 'yui');
+
+
+type Customer = {
+  name: string,
+  age: number,
+  account?: Account | null | undefined
+};
+
+const customerA: Customer = {
+  name: 'Nakano Azusa',
+  age: 15,
+  account: undefined
+};
+
+const customerB: Customer = {
+  name: 'John Doe',
+  age: 61,
+  account: {
+    type: 'twitter',
+    handle: '@johndoe'
+  }
+};
+
+const customerC: Customer = {
+  name: 'Nakano Azusa',
+  age: 15,
+};
+
+const customerPrism = prism<Customer>().account.handle;
+equal(customerPrism.get()(customerA), undefined);
+equal(customerPrism.get()(customerB), '@johndoe');
+equal(customerPrism.get()(customerC), undefined);
