@@ -10,7 +10,7 @@ export class LensImpl<T, U> {
 
   public k<K extends keyof U>(key: K): Lens<T, U[K]> {
     return this.compose(lens(
-      t => t[key],
+      t => (!t ? undefined : t[key]) as U[K],
       v => t => {
         const copied = copy(t);
         copied[key] = v;
@@ -83,4 +83,13 @@ export function lens() {
   } else {
     return lens(t => t, v => _ => v);
   }
+}
+
+export type Prism<T, U> = LensImpl<T, U | undefined> & PrismProxy<T, U | undefined>;
+export type PrismProxy<T, U> = {readonly [K in keyof U]-?: Prism<T, U[K]>};
+
+export function prism<T>(): Prism<T, T>;
+export function prism<T, U>(_get: Getter<T, U>, _set: (value: U) => Setter<T>): Prism<T, U>;
+export function prism() {
+  return lens.apply(undefined, arguments as any);
 }
